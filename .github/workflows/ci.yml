@@ -55,3 +55,7 @@ jobs:
 
     - name: Test
       run: make test
+
+    - name: Print success message
+      if: ${{ success() }}
+      run: echo "hello successful"
