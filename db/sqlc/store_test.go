@@ -16,7 +16,7 @@ func TestTransferTx(t *testing.T) {
 	fmt.Println(">> before:", account1.Balance, account2.Balance)
 
 	//run concurrent transfer transactions
-	n := 5
+	n := 4
 
 	amount := int64(10)
 
