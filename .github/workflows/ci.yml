@@ -58,24 +58,6 @@ jobs:
 
     - name: Print success message
       if: ${{ success() }}
-      run: echo "hello successful"
+      run: echo "successful"
   
-  commit-changes:
-    needs: test
-    runs-on: ubuntu-latest
-    if: ${{ needs.test.result == 'success' }}
-    
-    steps:
-    - name: Check out the repository
-      uses: actions/checkout@v2
-    
-    - name: Print success message
-      run: echo "Tests passed, committing changes..."
-    
-    - name: Commit changes
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git add .
-        git commit -m "Tests passed"
-        git push
+      
