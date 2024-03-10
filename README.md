@@ -27,7 +27,9 @@ This project is a simple RESTful API for managing bank accounts. It allows users
 
     ```plaintext
     DB_DRIVER=postgres
-    DB_SOURCE=postgresql://root:mysecretpassword@postgres:5432/simple_bank?sslmode=disable
+    DB_SOURCE=postgresql://root:mysecretpassword@postgres:5432/simple_bank?sslmode=disable if you are using Docker for both app and db
+        OR
+    DB_SOURCE=postgresql://root:mysecretpassword@localhost:5432/simple_bank?sslmode=disable  
     SERVER_ADDRESS=0.0.0.0:8000
     ```
 
@@ -60,7 +62,9 @@ This project is a simple RESTful API for managing bank accounts. It allows users
     ```
 
 7. Migrate up to apply database migrations:
-    DB_URL=postgresql://root:mysecretpassword@postgres:5432/simple_bank?sslmode=disable
+    DB_SOURCE=postgresql://root:mysecretpassword@postgres:5432/simple_bank?sslmode=disable if you are using Docker for both app and db
+        OR
+    DB_URL=postgresql://root:mysecretpassword@localhost:5432/simple_bank?sslmode=disable
 
     ```bash
     migrate -path db/migration -database "$(DB_URL)" -verbose up
