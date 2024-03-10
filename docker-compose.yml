@@ -1,0 +1,26 @@
+version: '3.9'
+
+services:
+  bank_api:
+    container_name: simple_bank_api
+    image: weldon/go-app:1.0.0
+    build: .
+    ports:
+      - "8000:8000"  # Assuming your Go application listens on port 8080
+    depends_on:
+      - postgres
+
+  postgres:
+    container_name: postgres
+    image: postgres:12
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_DB: simple_bank
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata: {}
