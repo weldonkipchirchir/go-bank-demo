@@ -7,14 +7,20 @@ import (
 )
 
 // Store provides all functions to execute db queries and transactions
-type Store struct {
+type Store interface {
+	Querier
+	TransferTx(ctx context.Context, arg TransferTxParams) (TransferTxResults, error)
+}
+
+// SQLStore provides all functions to execute db queries and transactions
+type SQLStore struct {
 	*Queries         //  holds the methods to execute queries
 	db       *sql.DB // Needed to create a new db transaction
 }
 
 // NewStore creates a new store
-func NewStore(db *sql.DB) *Store {
-	return &Store{
+func NewStore(db *sql.DB) Store {
+	return &SQLStore{
 		db:      db,
 		Queries: New(db),
 	}
@@ -39,7 +45,7 @@ type TransferTxResults struct {
 var txKey = struct{}{}
 
 // ExecTx excutes a function within a adatabse transaction
-func (store *Store) execTx(ctx context.Context, fn func(*Queries) error) error {
+func (store *SQLStore) execTx(ctx context.Context, fn func(*Queries) error) error {
 	// begins a new transaction on the database connection (store.db)
 	tx, err := store.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -65,7 +71,7 @@ func (store *Store) execTx(ctx context.Context, fn func(*Queries) error) error {
 
 // TransferTx performs a mone transfer from one account to the other account
 // it creates a transfer record, add account and update accounts' balance within a single database transaction
-func (store *Store) TransferTx(ctx context.Context, arg TransferTxParams) (TransferTxResults, error) {
+func (store *SQLStore) TransferTx(ctx context.Context, arg TransferTxParams) (TransferTxResults, error) {
 	//1.create transfer record
 	var result TransferTxResults
 	// executes the provided function within a database transaction using the execTx method of the Store.

@@ -24,3 +24,8 @@ services:
 
 volumes:
   pgdata: {}
+
+# sudo docker compose up -d postgres
+# sudo docker compose build
+# sudo docker compose up bank_api
+  
