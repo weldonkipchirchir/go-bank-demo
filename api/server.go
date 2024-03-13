@@ -1,21 +1,33 @@
 package api
 
 import (
+	"fmt"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
 	db "github.com/weldonkipchirchir/simple_bank/db/sqlc"
+	token "github.com/weldonkipchirchir/simple_bank/token"
+	"github.com/weldonkipchirchir/simple_bank/util"
 )
 
 // server serves HTTP requests for the banking service
 type Server struct {
-	store  db.Store
-	router *gin.Engine
+	config     util.Config
+	store      db.Store
+	router     *gin.Engine
+	tokenMaker token.Maker
 }
 
 // NewServer creates a new HTTP server and sets up routing
-func NewServer(store db.Store) *Server {
-	server := &Server{store: store}
+func NewServer(config util.Config, store db.Store) (*Server, error) {
+	//use either NewJWTMaker or NewPasetoMaker - comment one to use the other
+	// tokenMaker, err := token.NewPasetoMaker(config.TokenSymmetricKey)
+	tokenMaker, err := token.NewJWTMaker(config.TokenSymmetricKey)
+	if err != nil {
+		return nil, fmt.Errorf("cannot create token maker: %w", err)
+	}
+	server := &Server{store: store, tokenMaker: tokenMaker, config: config}
 	router := gin.Default()
 
 	//register validator
@@ -35,8 +47,11 @@ func NewServer(store db.Store) *Server {
 	//craete user
 	router.POST("/user", server.createUser)
 
+	//login
+	router.POST("/user/login", server.loginUser)
+
 	server.router = router
-	return server
+	return server, nil
 }
 
 // start runs the server
