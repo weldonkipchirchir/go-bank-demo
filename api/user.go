@@ -3,9 +3,11 @@ package api
 import (
 	"database/sql"
 	"net/http"
+	"testing"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/require"
 	db "github.com/weldonkipchirchir/simple_bank/db/sqlc"
 	"github.com/weldonkipchirchir/simple_bank/util"
 )
@@ -72,7 +74,7 @@ type loginUserRequest struct {
 }
 
 type loginUserResponse struct {
-	AccessToken string       `json:access_token""`
+	AccessToken string       `json:"access_token"`
 	User        userResponse `json:"user"`
 }
 
@@ -109,4 +111,18 @@ func (server *Server) loginUser(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, rsp)
+}
+
+func randomUser(t *testing.T) (user db.User, password string) {
+	password = util.RandomString(6)
+	hashedPassword, err := util.HashedPassword(password)
+	require.NoError(t, err)
+
+	user = db.User{
+		Username:       util.RandomOwner(),
+		HashedPassword: hashedPassword,
+		FullName:       util.RandomOwner(),
+		Email:          util.RandomEmail(),
+	}
+	return
 }
