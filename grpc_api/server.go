@@ -7,6 +7,7 @@ import (
 	"github.com/weldonkipchirchir/simple_bank/pb"
 	"github.com/weldonkipchirchir/simple_bank/token"
 	"github.com/weldonkipchirchir/simple_bank/util"
+	"github.com/weldonkipchirchir/simple_bank/worker"
 )
 
 // server serves HTTP requests for the banking service
@@ -15,17 +16,18 @@ type Server struct {
 	config                           util.Config
 	store                            db.Store
 	tokenMaker                       token.Maker
+	taskDistributor                  worker.TaskDistributor
 }
 
 // NewServer creates a new grpc server
-func NewServer(config util.Config, store db.Store) (*Server, error) {
+func NewServer(config util.Config, store db.Store, taskDistributor worker.TaskDistributor) (*Server, error) {
 	//use either NewJWTMaker or NewPasetoMaker - comment one to use the other
 	// tokenMaker, err := token.NewPasetoMaker(config.TokenSymmetricKey)
 	tokenMaker, err := token.NewJWTMaker(config.TokenSymmetricKey)
 	if err != nil {
 		return nil, fmt.Errorf("cannot create token maker: %w", err)
 	}
-	server := &Server{store: store, tokenMaker: tokenMaker, config: config}
+	server := &Server{store: store, tokenMaker: tokenMaker, config: config, taskDistributor: taskDistributor}
 
 	return server, nil
 }

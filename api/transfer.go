@@ -1,7 +1,6 @@
 package api
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
 	"net/http"
@@ -62,7 +61,7 @@ func (server *Server) createTransfer(ctx *gin.Context) {
 func (server *Server) validAccount(ctx *gin.Context, accountID int64, currency string) (db.Account, bool) {
 	account, err := server.store.GetAccount(ctx, accountID)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == db.ErrRecordNotFound {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
 			return account, false
 		}
@@ -92,7 +91,7 @@ func (server *Server) validAccount(ctx *gin.Context, accountID int64, currency s
 // 	}
 // 	account, err := server.store.GetAccount(ctx, req.ID)
 // 	if err != nil {
-// 		if err == sql.ErrNoRows {
+// 		if err == db.ErrRecordNotFound {
 // 			ctx.JSON(http.StatusNotFound, errorResponse(err))
 // 			return
 // 		}
@@ -157,7 +156,7 @@ func (server *Server) validAccount(ctx *gin.Context, accountID int64, currency s
 // 	}
 // 	account, err := server.store.UpdateAccount(ctx, arg)
 // 	if err != nil {
-// 		if err == sql.ErrNoRows {
+// 		if err == db.ErrRecordNotFound {
 // 			ctx.JSON(http.StatusNotFound, errorResponse(err))
 // 			return
 // 		}
@@ -181,7 +180,7 @@ func (server *Server) validAccount(ctx *gin.Context, accountID int64, currency s
 // 	}
 // 	err := server.store.DeleteAccount(ctx, req.ID)
 // 	if err != nil {
-// 		if err == sql.ErrNoRows {
+// 		if err == db.ErrRecordNotFound {
 // 			ctx.JSON(http.StatusNotFound, errorResponse(err))
 // 			return
 // 		}

@@ -1,13 +1,14 @@
 package api
 
 import (
-	"database/sql"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	db "github.com/weldonkipchirchir/simple_bank/db/sqlc"
+	token "github.com/weldonkipchirchir/simple_bank/token"
 	"github.com/weldonkipchirchir/simple_bank/util"
 )
 
@@ -89,7 +90,7 @@ func (server *Server) loginUser(ctx *gin.Context) {
 	}
 	user, err := server.store.GetUser(ctx, req.Username)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == db.ErrRecordNotFound {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
 			return
 		}
@@ -102,13 +103,13 @@ func (server *Server) loginUser(ctx *gin.Context) {
 		return
 	}
 
-	accessToken, accessPayload, err := server.tokenMaker.CreateToken(user.Username, server.config.AccessTokenDuration)
+	accessToken, accessPayload, err := server.tokenMaker.CreateToken(user.Username, user.Role, server.config.AccessTokenDuration)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
-	refreshToken, refreshPayload, err := server.tokenMaker.CreateToken(user.Username, server.config.RefreshTokenDuration)
+	refreshToken, refreshPayload, err := server.tokenMaker.CreateToken(user.Username, user.Role, server.config.RefreshTokenDuration)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -137,5 +138,74 @@ func (server *Server) loginUser(ctx *gin.Context) {
 		User:                  newUserResponse(user),
 	}
 
+	ctx.JSON(http.StatusOK, rsp)
+}
+
+// update user
+type updateUserRequest struct {
+	Username          string    `json:"username" binding:"required,alphanum"`
+	FullName          string    `json:"full_name,omitempty" binding:"omitempty"`
+	Email             string    `json:"email,omitempty" binding:"omitempty,email"`
+	Password          string    `json:"password,omitempty" binding:"omitempty,min=6"`
+	PasswordChangedAt time.Time `json:"password_changed_at,omitempty" binding:"omitempty,min=6"`
+}
+
+type updateUserResponse struct {
+	User userResponse `json:"user"`
+}
+
+func (server *Server) updateUser(ctx *gin.Context) {
+	var req updateUserRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": errorResponse(err)})
+		return
+	}
+
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	if authPayload.Username != req.Username && authPayload.Role != util.BankerRole {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	arg := db.UpdateUserParams{
+		Username: req.Username,
+		FullName: pgtype.Text{
+			String: req.FullName,
+			Valid:  req.FullName != "",
+		},
+		Email: pgtype.Text{
+			String: req.Email,
+			Valid:  req.Email != "",
+		},
+	}
+
+	if req.Password != "" {
+		hashedPassword, err := util.HashedPassword(req.Password)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": errorResponse(err)})
+			return
+		}
+		arg.HashedPassword = pgtype.Text{
+			String: hashedPassword,
+			Valid:  true,
+		}
+		arg.PasswordChangedAt = pgtype.Timestamptz{
+			Time:  time.Now(),
+			Valid: true,
+		}
+	}
+
+	user, err := server.store.UpdateUser(ctx, arg)
+	if err != nil {
+		if db.ErrorCode(err) == db.UniqueViolation {
+			ctx.JSON(http.StatusConflict, gin.H{"error": gin.H{"code": "email already exists"}})
+			return
+		}
+		ctx.JSON(http.StatusOK, errorResponse(err))
+		return
+	}
+	rsp := updateUserResponse{
+		User: newUserResponse(user),
+	}
 	ctx.JSON(http.StatusOK, rsp)
 }

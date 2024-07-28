@@ -9,7 +9,6 @@ import (
 )
 
 func TestTransferTx(t *testing.T) {
-	store := NewStore(testDB)
 
 	account1 := createRandomAccount(t)
 	account2 := createRandomAccount(t)
@@ -27,7 +26,7 @@ func TestTransferTx(t *testing.T) {
 		txName := fmt.Sprintf("tx %d", i+1)
 		go func() {
 			ctx := context.WithValue(context.Background(), txKey, txName)
-			result, err := store.TransferTx(ctx, TransferTxParams{
+			result, err := testStore.TransferTx(ctx, TransferTxParams{
 				FromAccountID: account1.ID,
 				ToAccountID:   account2.ID,
 				Amount:        amount,
@@ -58,7 +57,7 @@ func TestTransferTx(t *testing.T) {
 
 		//confirm transaction is created
 		//get transfer record
-		_, err = store.GetTransfer(context.Background(), transfer.ID)
+		_, err = testStore.GetTransfer(context.Background(), transfer.ID)
 		require.NoError(t, err)
 
 		//check enteries of the results
@@ -69,7 +68,7 @@ func TestTransferTx(t *testing.T) {
 		require.NotZero(t, fromEntry.AccountID)
 		require.NotZero(t, fromEntry.CreatedAt)
 
-		_, err = store.GetEntry(context.Background(), fromEntry.ID)
+		_, err = testStore.GetEntry(context.Background(), fromEntry.ID)
 		require.NoError(t, err)
 
 		toEntry := result.ToEntry
@@ -79,7 +78,7 @@ func TestTransferTx(t *testing.T) {
 		require.NotZero(t, toEntry.AccountID)
 		require.NotZero(t, toEntry.CreatedAt)
 
-		_, err = store.GetEntry(context.Background(), toEntry.ID)
+		_, err = testStore.GetEntry(context.Background(), toEntry.ID)
 		require.NoError(t, err)
 
 		//check accounts
@@ -107,10 +106,10 @@ func TestTransferTx(t *testing.T) {
 	}
 
 	//check the final updated balance
-	updateAccount1, err1 := testQueries.GetAccount(context.Background(), account1.ID)
+	updateAccount1, err1 := testStore.GetAccount(context.Background(), account1.ID)
 	require.NoError(t, err1)
 
-	updateAccount2, err1 := testQueries.GetAccount(context.Background(), account2.ID)
+	updateAccount2, err1 := testStore.GetAccount(context.Background(), account2.ID)
 	require.NoError(t, err1)
 
 	// fmt.Println(">> after:", updateAccount1.Balance, updateAccount2.Balance)
